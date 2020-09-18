@@ -1,0 +1,4 @@
+1. Implement maze view with mark for a cell support;
+2. Rewrite view to rewrite maze, instead of building a new one;
+3. Implement start / finish and navigation;
+4. Implement Spawn of an opponent with chase navigation;
