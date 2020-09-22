@@ -1,4 +1,9 @@
-1. Implement maze view with mark for a cell support;
-2. Rewrite view to rewrite maze, instead of building a new one;
-3. Implement arrows navigation and recognition of finish;
-4. Implement Spawn of an opponent with chase navigation;
+1. Implement maze view with mark for a cell support; CHECKED
+2. Rewrite view to rewrite maze, instead of building a new one; CHECKED
+3. Implement arrows navigation and recognition of finish; CHECKED
+4. Fix bug with teleport to west; CHECKED
+5. Implement Spawn of an opponent with chase navigation;
+6. Rewrite the Cell constructor in order to acquire X and Y coords instead of i and j;
+7. Maybe pass array/tuple instead of four side arguments (side_e, etc);
+8. During Cell init, when putting a wall - put a wall to adjasted cell as well;
+9. Add support of rectangle maps;

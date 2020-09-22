@@ -1,10 +1,8 @@
-from typing import Dict, List
 import copy
-from time import sleep
+from enum import Enum
+from typing import Dict, List, Tuple
 
 # ----- START AREA: DATA MODEL
-
-_R_TEST_FLAG = True
 
 def rewrite_last_n_rows(string, rows):
 	prefix = '\n' + rows * u'\u008D' 
@@ -94,10 +92,13 @@ class Cell:
 class Maze:
 
 	_MAZE_DATA = {}
+	_finish_location = (0, 0)
 
-	def __init__(self, maze: Dict[int, Dict[int, Cell]]):
+	def __init__(self, maze: Dict[int, Dict[int, Cell]], finish: Tuple[int, int], cell_height: int):
 		self.frame_maze(maze)
 		self._MAZE_DATA = maze
+		self._finish_location = finish
+		self._cell_height = cell_height
 
 	def frame_maze(self, maze: Dict[int, Dict[int, Cell]]):
 		size = len(maze.keys())
@@ -118,11 +119,28 @@ class Maze:
 	def get_maze(self) -> Dict[int, Dict[int, Cell]]:
 		return self._MAZE_DATA
 
+	def get_cell(self, x: int, y: int) -> Cell:
+		return self._MAZE_DATA[y][x]
+
 	def get_maze_size(self):
 		return len(self._MAZE_DATA.keys())
 
 	def get_maze_cell_height(self):
-		return 3
+		return self._cell_height
+
+	def get_finish_location(self):
+		return self._finish_location
+
+class State(Enum):
+	active = 0
+	victory = 1
+	failed = 2
+
+class Arrow(Enum):
+	up = 0
+	down = 1
+	right = 2
+	left = 3
 
 
 # ----- END AREA: DATA MODEL
@@ -168,84 +186,198 @@ def replace_list_item(items, old_value, new_value):
 	if items[-1] == '_':
 		items[-1] = ' '
 
+import sys,tty,termios
+class _Getch:
+    def __call__(self):
+            fd = sys.stdin.fileno()
+            old_settings = termios.tcgetattr(fd)
+            try:
+                tty.setraw(sys.stdin.fileno())
+                ch = sys.stdin.read(3)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            return ch
 
+def read_arrow():
+        inkey = _Getch()
+        while(1):
+            k=inkey()
+            if k!='':break
+        if k=='\x1b[A':
+            return Arrow.up
+        elif k=='\x1b[B':
+            return Arrow.down
+        elif k=='\x1b[C':
+            return Arrow.right
+        elif k=='\x1b[D':
+            return Arrow.left
+        else:
+            return None
 
 # ----- END AREA: UTILS
 
 # ----- START AREA: MOCK DATA
-maze_cells_data = {
+maze_cells_data_level_1 = {
 	0: {
 		0: Cell(0, 0, side_e=True),
-		1: Cell(0, 1),
+		1: Cell(0, 1, side_w=True),
 		2: Cell(0, 2)
 	},
 	1: {
 		0: Cell(1, 0, side_e=True),
-		1: Cell(1, 1, side_e=True),
-		2: Cell(1, 2)
+		1: Cell(1, 1, side_e=True, side_w=True),
+		2: Cell(1, 2, side_w=True)
 	},
 	2: {
 		0: Cell(2, 0),
 		1: Cell(2, 1, side_e=True),
-		2: Cell(2, 2)
+		2: Cell(2, 2, side_w=True)
 	}
 }
+
+maze_level_1 = Maze(maze=maze_cells_data_level_1, finish=(2, 2), cell_height=3)
+
+maze_cells_data_level_2 = {
+	0: {
+		0: Cell(0, 0, side_e=True),
+		1: Cell(0, 1, side_e=True, side_w=True),
+		2: Cell(0, 2, side_w=True),
+		3: Cell(0, 3, side_s=True),
+		4: Cell(0, 4, side_s=True),
+		5: Cell(0, 5),
+	},
+	1: {
+		0: Cell(1, 0, side_e=True),
+		1: Cell(1, 1, side_e=True, side_w=True),
+		2: Cell(1, 2, side_w=True),
+		3: Cell(1, 3, side_n=True, side_s=True),
+		4: Cell(1, 4, side_n=True, side_e=True),
+		5: Cell(1, 5, side_w=True),
+	},
+	2: {
+		0: Cell(2, 0),
+		1: Cell(2, 1, side_e=True),
+		2: Cell(2, 2, side_w=True, side_s=True),
+		3: Cell(2, 3, side_n=True, side_e=True),
+		4: Cell(2, 4, side_w=True, side_s=True, side_e=True),
+		5: Cell(2, 5, side_w=True),
+	},
+	3: {
+		0: Cell(3, 0, side_e=True),
+		1: Cell(3, 1, side_w=True, side_s=True),
+		2: Cell(3, 2, side_s=True, side_n=True),
+		3: Cell(3, 3, side_e=True, side_s=True),
+		4: Cell(3, 4, side_w=True, side_n=True),
+		5: Cell(3, 5, side_s=True),
+	},
+	4: {
+		0: Cell(4, 0, side_s=True),
+		1: Cell(4, 1, side_s=True, side_n=True, side_e=True),
+		2: Cell(4, 2, side_n=True, side_w=True),
+		3: Cell(4, 3, side_n=True, side_s=True),
+		4: Cell(4, 4, side_e=True, side_s=True),
+		5: Cell(4, 5, side_w=True, side_n=True),
+	},
+	5: {
+		0: Cell(5, 0, side_n=True),
+		1: Cell(5, 1, side_n=True),
+		2: Cell(5, 2),
+		3: Cell(5, 3, side_n=True),
+		4: Cell(5, 4, side_n=True),
+		5: Cell(5, 5),
+	},
+}
+
+maze_level_2 = Maze(maze=maze_cells_data_level_2, finish=(4, 5), cell_height=3)
+
+maze_cells_data_level_3 = {
+	0: {
+		0: Cell(0, 0, side_e=True),
+		1: Cell(0, 1, side_w=True),
+		2: Cell(0, 2)
+	},
+	1: {
+		0: Cell(1, 0, side_e=True),
+		1: Cell(1, 1, side_e=True, side_w=True),
+		2: Cell(1, 2, side_w=True)
+	},
+	2: {
+		0: Cell(2, 0, side_e=True),
+		1: Cell(2, 1, side_e=True, side_w=True),
+		2: Cell(2, 2, side_w=True)
+	},
+	3: {
+		0: Cell(3, 0),
+		1: Cell(3, 1, side_e=True),
+		2: Cell(3, 2, side_w=True)
+	}
+}
+
+maze_level_3 = Maze(maze=maze_cells_data_level_3, finish=(3, 2), cell_height=3)
 
 # ----- END AREA: MOCK DATA
 
 # ----- START AREA: EXECUTE SEQUENCE
 
-maze = Maze(maze_cells_data)
-steps = 0
-if _R_TEST_FLAG:
+def game_instance(maze: Maze):
+	_steps = 0
 	_maze_height = maze.get_maze_size() * maze.get_maze_cell_height() + 2
-	_PLAYER_LOCATION = (0,0)
-	x, y = _PLAYER_LOCATION
-	_FINISH_LOCATION = (2,2)
-	maze_cells_data[_FINISH_LOCATION[1]][_FINISH_LOCATION[0]].place_finish()
-	state = 0 # convert to enum
-	for i in range(10):
-		if (y, x) == _FINISH_LOCATION:
-			state = 1
-		if state == 1:
-			break
-		maze_cells_data[x][y].remove_character()
-		if i == 0:
-			y, x = 0, 0
-		if  i == 1:
-			y, x = 0, 1
-		if  i == 2:
-			y, x = 0, 2
-		if  i == 3:
-			y, x = 1, 2
-		if i == 4:
-			y, x = 1, 1
-		if i == 5:
-			y, x = 1, 0
-		if i == 6:
-			y, x = 2, 0
-		if i == 7:
-			y, x = 2, 1
-		if i == 8:
-			y, x = 2, 2
-		maze_cells_data[x][y].place_player()
+	_player_location = 0, 0
+
+	# placing finish
+	_finish = maze.get_finish_location()
+	maze.get_cell(_finish[1], _finish[0]).place_finish()
+	state = State.active
+
+	x, y = _player_location
+
+	while True:
+		
+		maze.get_cell(x=x, y=y).place_player()
+		
 		view = render_maze(maze)
-		if i > 0:
+		if _steps > 0:
 			rewrite_last_n_rows(view, _maze_height + 1)
 		else:
 			print(view)
-		steps += 1
-		print(f'STEPS: {steps}')
-		sleep(0.5)
-	if state == 1:
-		rewrite_last_n_rows('\n\n\n\n\n\t\t\t=== V I C T O R Y ===\n\n\n\n', _maze_height + 1)
-		print(f'STEPS: {steps}')
-else:
-	answer = ''
-	while not (answer in ['N', 'n']):  
-		answer = input('Would you like to render maze? (Y/N):\n')
-		if answer in ['Y', 'y']:
-			view = render_maze(maze)
-			print(view)
+		print(f'STEPS: {_steps}')
+
+		if (y, x) == _finish:
+			state = State.victory
+		if state == State.victory:
+			break
+
+		output = None
+		if (key := read_arrow()):
+			cell = maze.get_cell(x=x, y=y)
+			cell.remove_character()
+			if key == Arrow.up:
+				if y > 0 and not cell.side_n:
+					y -= 1
+			elif key == Arrow.down:
+				if y < maze.get_maze_size() and not cell.side_s:
+					y += 1
+			elif key == Arrow.right:
+				if x < maze.get_maze_size() and not cell.side_e:
+					x += 1
+			elif key == Arrow.left:
+				if x > 0 and not cell.side_w:
+					x -= 1
+		else:
+			break
+
+		_steps += 1
+
+	if state == State.victory:
+		text = '=== V I C T O R Y ==='
+	else:
+		text = '=== G A M E  O V E R ==='
+	span = (int(_maze_height / 2) - 1) * '\n'
+	tab = int(_maze_height / 3) * '\t'
+	rewrite_last_n_rows(span + tab + text + span, _maze_height + 1)
+	print(f'STEPS: {_steps}')
+		
+
+game_instance(maze_level_2)
 
 # ----- END AREA: EXECUTE SEQUENCE
